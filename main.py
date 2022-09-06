@@ -1,7 +1,12 @@
-# This is a sample Python script.
+# Задание на лабу
+# Номера НЗБП в СВИ-1 (𝑝) с указанием цветовых каналов:
+# Blue-4 XOR Green-1
+# Цветовой канал, используемый в СВИ-4:
+# Cb
+#
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+
+
 
 
 def print_hi(name):
