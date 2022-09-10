@@ -145,9 +145,30 @@ def main():
     _, cb, _ = get_channels(converted_image)
     _, marked_cb, _ = get_channels(marked_image)
 
-    converted_image = ycbcr2rgb(converted_image).astype(np.int32)
     marked_image = ycbcr2rgb(marked_image).astype(np.int32)
-    plot(converted_image, marked_image, watermark, extracted_watermark, cb, marked_cb, "Cb")
+    plot(image, marked_image, watermark, extracted_watermark, cb, marked_cb, "Cb")
+
+    # Допзадание №1
+    watermark2 = read_image('./images/ornament.tif') // 255  # (0, 255) -> (0, 1)
+
+    marked_image = embedding_svi_1(image, watermark)
+
+    converted_image = rgb2ycbcr(marked_image)
+    marked_image = embedding_svi_4(converted_image, watermark2)
+
+    _, cb, _ = get_channels(converted_image)
+    _, marked_cb, _ = get_channels(marked_image)
+
+    extracted_watermark2 = extracting_svi_4(converted_image, marked_image)
+
+    marked_image = ycbcr2rgb(marked_image).astype(np.int32)
+    extracted_watermark = extract_svi_1(image, marked_image)
+
+    _, green, _ = get_channels(image)
+    _, marked_green, _ = get_channels(marked_image)
+
+    plot(image, marked_image, watermark2, extracted_watermark2, cb, marked_cb, "Cb")
+    plot(image, marked_image, watermark, extracted_watermark, green, marked_green, "Зеленый")
 
     show()
 
