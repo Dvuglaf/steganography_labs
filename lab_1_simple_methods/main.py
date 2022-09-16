@@ -31,13 +31,20 @@ def get_bit_layer(channel, idx: int):
     return (channel & (2 ** (idx - 1))) >> (idx - 1)
 
 
-# Преобразование битового вектора в матрицу со случайными координатами
-def bit_vector_to_watermark(bit_vector, seed):
+# Создание массива из size неповторяющихся координат
+def generate_unique_coordinates(seed: int, size: int):
     rng = np.random.default_rng(seed)  # создание нового битового генератора с seed'ом
 
     # Генерация массива без повторений и получение координат (остаток от деления, целая часть)
-    unique_numbers = rng.choice(IMAGE_SHAPE[0] * IMAGE_SHAPE[1], size=len(bit_vector), replace=False)
+    unique_numbers = rng.choice(IMAGE_SHAPE[0] * IMAGE_SHAPE[1], size=size, replace=False)
     coordinates = np.array((unique_numbers % IMAGE_SHAPE[0], unique_numbers // IMAGE_SHAPE[0])).T
+    
+    return coordinates
+
+
+# Преобразование битового вектора в матрицу со случайными координатами
+def bit_vector_to_watermark(bit_vector, seed: int):
+    coordinates = generate_unique_coordinates(seed, len(bit_vector))
 
     # Преобразование битового вектора в матрицу на основе сгенерированных координат
     watermark = np.zeros(WATERMARK_SHAPE, dtype=np.uint8)
@@ -82,11 +89,7 @@ def embedding_svi_2(image, text: str, key: int):
     if q > 1:
         raise ValueError("Container overflow, string is too big!")
 
-    rng = np.random.default_rng(key)  # создание нового битового генератора с seed'ом
-
-    # Генерация массива без повторений и получение координат (остаток от деления, целая часть)
-    unique_numbers = rng.choice(IMAGE_SHAPE[0] * IMAGE_SHAPE[1], size=len(bit_vector), replace=False)
-    coordinates = np.array((unique_numbers % IMAGE_SHAPE[0], unique_numbers // IMAGE_SHAPE[0])).T
+    coordinates = generate_unique_coordinates(key, len(bit_vector))
 
     copy_image = copy.copy(image)
 
@@ -107,12 +110,9 @@ def extracting_svi_2(marked_image, key: int):
     _, marked_green, _ = get_channels(marked_image)
     marked_layer = get_bit_layer(marked_green, 1)
 
-    rng = np.random.default_rng(key)  # создание нового битового генератора с seed'ом
     extracted_bit_vector = bitarray.bitarray(key * 8)
 
-    # Генерация массива без повторений и получение координат (остаток от деления, целая часть)
-    unique_numbers = rng.choice(IMAGE_SHAPE[0] * IMAGE_SHAPE[1], size=key * 8, replace=False)
-    coordinates = np.array((unique_numbers % IMAGE_SHAPE[0], unique_numbers // IMAGE_SHAPE[0])).T
+    coordinates = generate_unique_coordinates(key, key * 8)
 
     # Извлечение из битовой плоскости в сгенерированных координатах
     for i in range(key * 8):
@@ -140,12 +140,9 @@ def embedding_svi_2_virtual(image, text: str, key: int):
 def extracting_svi_2_virtual(image, marked_image, key: int):
     extracted_watermark = extracting_svi_1(image, marked_image)
 
-    rng = np.random.default_rng(key)  # создание нового битового генератора с seed'ом
     extracted_bit_vector = bitarray.bitarray(key * 8)
-
-    # Генерация массива без повторений и получение координат (остаток от деления, целая часть)
-    unique_numbers = rng.choice(IMAGE_SHAPE[0] * IMAGE_SHAPE[1], size=key * 8, replace=False)
-    coordinates = np.array((unique_numbers % IMAGE_SHAPE[0], unique_numbers // IMAGE_SHAPE[0])).T
+    
+    coordinates = generate_unique_coordinates(key, key * 8)
 
     # Извлечение
     for i in range(key * 8):
