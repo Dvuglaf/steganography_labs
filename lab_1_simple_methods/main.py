@@ -4,9 +4,9 @@
 # Цветовой канал, используемый в СВИ-4: Cb
 # Способ встраивания в СВИ-4: (3.13), add = С (mod delta)
 
-import bitarray
 import copy
 import numpy as np
+import bitarray
 from skimage.io import imread, imshow, show
 from matplotlib import pyplot as plt
 
@@ -76,7 +76,7 @@ def extracting_svi_1(image, marked_image):
     return get_bit_layer(blue, 4) ^ get_bit_layer(green, 1) ^ get_bit_layer(marked_green, 1)
 
 
-# Стеганографическое НЗБ-встраивание: key - длина встраиваемой строки, key * 8 - значение seed'а для генератора
+# Стеганографическое НЗБ-встраивание: key * 8 - длина встраиваемой строки, key - значение seed'а для генератора
 def embedding_svi_2(image, text: str, key: int):
     bit_vector = bitarray.bitarray()
     bit_vector.frombytes(text.encode('utf-8'))
@@ -123,8 +123,8 @@ def extracting_svi_2(marked_image, key: int):
     return extracted_bit_vector.tobytes().decode('utf-8')  # перевод в строку
 
 
-# Стеганографическое НЗБ-встраивание с данными из задания 1-2: key - длина встраиваемой строки,
-#                                                              key * 8 - значение seed'а для генератора
+# Стеганографическое НЗБ-встраивание с данными из задания 1-2: key * 8 - длина встраиваемой строки,
+#                                                              key - значение seed'а для генератора
 def embedding_svi_2_virtual(image, text: str, key: int):
     bit_vector = bitarray.bitarray()
     bit_vector.frombytes(text.encode('utf-8'))
@@ -313,6 +313,65 @@ def extra_task_4_virtual(image, text):
     plot("Допзадание 2 (СВИ-2)", image, marked_image, watermark, extracted_watermark, green, marked_green, "Зеленый")
 
 
+def lsb_embed(C: np.ndarray, b: np.ndarray, seed: int) -> np.ndarray:
+    Nb = len(b)
+
+    # перевод картинки в вектор
+    shape = C.shape
+    C_vec = C.reshape((shape[0] * shape[1]))
+
+    # вектор индексов
+    indices = np.zeros((Nb))
+    if seed < 0:
+        indices = np.array(range(Nb))
+    else:
+        rng = np.random.default_rng(seed)
+        indices = rng.choice(C_vec.size, Nb, replace=False)
+    # занулить первую битовую плоскость у первых Nb координат
+    C_w = copy.copy(C_vec)
+    C_w[indices] = C_w[indices] & 254 | b
+    return C_w.reshape((shape[0], shape[1]))
+
+def lsb_extract(C_w: np.ndarray, Nb:int, seed: int) -> np.ndarray:
+
+    # перевод картинки в вектор
+    shape = C_w.shape
+    C_w_vec = C_w.reshape((shape[0] * shape[1]))
+
+    # вектор индексов
+    indices = np.zeros((Nb))
+    if seed < 0:
+        indices = np.array(range(Nb))
+    else:
+        rng = np.random.default_rng(seed)
+        indices = rng.choice(C_w_vec.size, Nb, replace=False)
+
+    b = C_w_vec[indices] % 2
+    return b
+
+def practise_1():
+    C = imread("./images/mickey.tif")
+    # b = np.array([1, 0, 1, 0, 1, 1, 0, 0, 1, 0])
+    # Nb = len(b)
+    Nb = 120000
+    b = np.random.randint(0, 2, Nb)
+    seed = 15000
+    C_w = lsb_embed(C, b, seed)
+
+    br = lsb_extract(C_w, Nb, seed)
+    ber = np.sum(b ^ br) / Nb
+
+    print(ber)
+
+    fig = plt.figure()
+    fig.add_subplot(1, 2, 1)
+    imshow(C)
+    fig.add_subplot(1, 2, 2)
+    imshow(C_w)
+
+    show()
+
+
 def main():
     image = read_image('./images/baboon.tif')
 
@@ -330,3 +389,4 @@ def main():
 
 
 main()
+# practise_1()
