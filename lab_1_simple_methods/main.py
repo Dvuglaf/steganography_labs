@@ -313,6 +313,7 @@ def extra_task_4_virtual(image, text):
     plot("Допзадание 2 (СВИ-2)", image, marked_image, watermark, extracted_watermark, green, marked_green, "Зеленый")
 
 
+# C - container, b - встраиваемые биты, seed - ключ для генераторы
 def lsb_embed(C: np.ndarray, b: np.ndarray, seed: int) -> np.ndarray:
     Nb = len(b)
 
@@ -321,25 +322,27 @@ def lsb_embed(C: np.ndarray, b: np.ndarray, seed: int) -> np.ndarray:
     C_vec = C.reshape((shape[0] * shape[1]))
 
     # вектор индексов
-    indices = np.zeros((Nb))
+    indices = np.zeros(Nb)
     if seed < 0:
         indices = np.array(range(Nb))
     else:
         rng = np.random.default_rng(seed)
         indices = rng.choice(C_vec.size, Nb, replace=False)
+
     # занулить первую битовую плоскость у первых Nb координат
     C_w = copy.copy(C_vec)
     C_w[indices] = C_w[indices] & 254 | b
     return C_w.reshape((shape[0], shape[1]))
 
-def lsb_extract(C_w: np.ndarray, Nb:int, seed: int) -> np.ndarray:
 
+# C_w - container с ЦВЗ, Nb - число встраиваемых бит, seed - ключ для генераторы
+def lsb_extract(C_w: np.ndarray, Nb: int, seed: int) -> np.ndarray:
     # перевод картинки в вектор
     shape = C_w.shape
     C_w_vec = C_w.reshape((shape[0] * shape[1]))
 
     # вектор индексов
-    indices = np.zeros((Nb))
+    indices = np.zeros(Nb)
     if seed < 0:
         indices = np.array(range(Nb))
     else:
@@ -349,24 +352,27 @@ def lsb_extract(C_w: np.ndarray, Nb:int, seed: int) -> np.ndarray:
     b = C_w_vec[indices] % 2
     return b
 
+
 def practise_1():
     C = imread("./images/mickey.tif")
-    # b = np.array([1, 0, 1, 0, 1, 1, 0, 0, 1, 0])
-    # Nb = len(b)
+
     Nb = 120000
     b = np.random.randint(0, 2, Nb)
     seed = 15000
+
     C_w = lsb_embed(C, b, seed)
-
     br = lsb_extract(C_w, Nb, seed)
-    ber = np.sum(b ^ br) / Nb
 
-    print(ber)
+    ber = np.sum(b ^ br) / Nb
+    print(f"BER = {ber}")
 
     fig = plt.figure()
-    fig.add_subplot(1, 2, 1)
+    sb = fig.add_subplot(1, 2, 1)
+    sb.set_title("Исходное изображение")
     imshow(C)
-    fig.add_subplot(1, 2, 2)
+
+    sb = fig.add_subplot(1, 2, 2)
+    sb.set_title("Изображение с ЦВЗ")
     imshow(C_w)
 
     show()
@@ -389,4 +395,4 @@ def main():
 
 
 main()
-# practise_1()
+practise_1()
