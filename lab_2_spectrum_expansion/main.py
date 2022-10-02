@@ -216,7 +216,8 @@ def plot(image, marked_image, watermark, extracted_watermark, alpha, rho, psnr, 
     print(f"Best alpha = {alpha}")
     print(f"Rho = {rho}")
     print(f"PSNR = {psnr}")
-    print(f"MAE in watermark extracting = {np.max(np.abs(watermark - extracted_watermark))}")
+    print(f"MAE between watermarks = {np.max(np.abs(watermark - extracted_watermark))}")
+    print(f"MAE between images = {np.max(np.abs(image - marked_image))}")
 
     fig = plt.figure()
     sp = fig.add_subplot(1, 2, 1)
@@ -241,7 +242,7 @@ def main():
     level = 3  # уровень декомпозиции
     image = read_image("./images/bridge.tif")
     key = 321
-    modified = False
+    modified = True
 
     best_alpha, _ = get_best_alpha(image, key, level)
 
