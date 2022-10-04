@@ -27,7 +27,7 @@ import numpy as np
 import pywt
 import skimage.metrics
 import scipy
-from skimage.io import imread, imshow, show
+from skimage.io import imread, imshow, show, imsave
 from matplotlib import pyplot as plt
 
 
@@ -191,13 +191,13 @@ def extracting(marked_image: np.array, image: np.array, alpha: float, level: int
 
 
 # Получение значения alpha, при котором rho максимально
-def get_best_alpha(image: np.array, key: int, level: int):
-    current_alpha = 0.05
+def get_best_alpha(image: np.array, key: int, level: int, modified: bool):
+    current_alpha = 0.1
     best_alpha = 0.
     max_rho = 0.
 
     for i in range(10):
-        marked_image, watermark = embedding(image, key, current_alpha, level, modified=False)
+        marked_image, watermark = embedding(image, key, current_alpha, level, modified=modified)
         extracted_watermark = extracting(marked_image, image, current_alpha, level)
 
         rho = get_rho(watermark, extracted_watermark)
@@ -212,12 +212,22 @@ def get_best_alpha(image: np.array, key: int, level: int):
     return best_alpha, max_rho
 
 
+def watermark_detection(extracted_watermark, threshold, key):
+    size = len(extracted_watermark)
+    watermark = generate_watermark(size, key)
+    rho = get_rho(watermark, extracted_watermark)
+    if rho > threshold:
+        return True
+    else:
+        return False
+
+
 def plot(image, marked_image, watermark, extracted_watermark, alpha, rho, psnr, modified):
     print(f"Best alpha = {alpha}")
     print(f"Rho = {rho}")
     print(f"PSNR = {psnr}")
-    print(f"MAE between watermarks = {np.max(np.abs(watermark - extracted_watermark))}")
-    print(f"MAE between images = {np.max(np.abs(image - marked_image))}")
+    print(f"MAE between watermarks = {np.average(np.abs(watermark - extracted_watermark))}")
+    print(f"MAE between images = {np.average(np.abs(marked_image.astype(int) - image.astype(int)))}")
 
     fig = plt.figure()
     sp = fig.add_subplot(1, 2, 1)
@@ -227,6 +237,11 @@ def plot(image, marked_image, watermark, extracted_watermark, alpha, rho, psnr, 
     sp = fig.add_subplot(1, 2, 2)
     sp.set_title("Изображение с ЦВЗ")
     imshow(marked_image, cmap='gray', vmin=0, vmax=255)
+
+    fig = plt.figure()
+    sp = fig.add_subplot(1, 1, 1)
+    sp.set_title("Difference between image and marked image")
+    imshow(np.absolute(marked_image.astype(int) - image.astype(int)), cmap='gray')
 
     if modified:
         beta = get_beta(image)
@@ -242,15 +257,21 @@ def main():
     level = 3  # уровень декомпозиции
     image = read_image("./images/bridge.tif")
     key = 321
-    modified = True
+    modified = False
+    detection_threshold = 0.2
 
-    best_alpha, _ = get_best_alpha(image, key, level)
+    best_alpha, _ = get_best_alpha(image, key, level, modified)
 
     marked_image, watermark = embedding(image, key, best_alpha, level, modified)
+    imsave("./images/marked_image.png", marked_image)
+
+    marked_image = read_image("./images/marked_image.png")
     extracted_watermark = extracting(marked_image, image, best_alpha, level)
 
     rho = get_rho(watermark, extracted_watermark)
     psnr = skimage.metrics.peak_signal_noise_ratio(image, marked_image)
+
+    print(f"Watermark with key {key} detected: {watermark_detection(extracted_watermark, detection_threshold, key)}")
 
     plot(image, marked_image, watermark, extracted_watermark, best_alpha, rho, psnr, modified)
 
