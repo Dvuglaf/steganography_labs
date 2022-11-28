@@ -10,13 +10,6 @@ from scipy.ndimage import median_filter
 from matplotlib import pyplot as plt
 from lab_2_spectrum_expansion.main import read_image, embedding, extracting, get_rho
 
-
-def cyclic_shift(marked_image, r):
-    N_1, N_2 = marked_image.shape
-    shifted = np.roll(marked_image, int(r * N_1), axis=1)
-    shifted = np.roll(shifted, int(r * N_2), axis=0)
-    return shifted
-
 """
 Циклический сдвиг
 Результат:
@@ -26,55 +19,11 @@ def cyclic_shift(marked_image, r):
 которые, в свою очередь, смещаются при выполнении преобразования,
 что делает невозможным корректное извлечение ЦВЗ
 """
-def task1(image, marked_image, watermark, alpha, level):
-    rho_shifted_arr = []
-
-    for r in np.arange(0.1, 1, 0.1):
-        shifted_image = cyclic_shift(marked_image, r)
-
-        extracted_watermark = extracting(marked_image, image, alpha, level)
-        extracted_watermark_shifted = extracting(shifted_image, image, alpha, level)
-
-        rho = get_rho(watermark, extracted_watermark)
-        rho_shifted = get_rho(watermark, extracted_watermark_shifted)
-
-        rho_shifted_arr.append(rho_shifted if rho_shifted > 0 else 0)
-
-        if r == 0.1:
-            print(f"Rho: {rho}")
-
-        if r == 0.4:
-            fig = plt.figure()
-            plt.suptitle(f"r={r}")
-            sp = fig.add_subplot(1, 2, 1)
-            sp.set_title("Исходное изображение")
-            imshow(marked_image, cmap='gray', vmin=0, vmax=255)
-
-            sp = fig.add_subplot(1, 2, 2)
-            sp.set_title("Сдвинутое изображение")
-            imshow(shifted_image, cmap='gray', vmin=0, vmax=255)
-
-    plt.figure()
-    plt.title("Зависимость меры близости от r")
-    plt.plot(np.arange(0.1, 1, 0.1), rho_shifted_arr)
-
-
-def scale(marked_image, k):
-    N_1, N_2 = marked_image.shape
-    scaled_image = rescale(marked_image, k)
-    N_1_scaled, N_2_scaled = scaled_image.shape
-    if k < 1.:
-        result_image = np.zeros(marked_image.shape)
-        result_image[N_1 // 2 - N_1_scaled // 2: N_1 // 2 + N_1_scaled // 2,
-                     N_2 // 2 - N_2_scaled // 2: N_2 // 2 + N_2_scaled // 2] =\
-            scaled_image[N_1_scaled // 2 - N_1_scaled // 2: N_1_scaled // 2 + N_1_scaled // 2,
-                         N_2_scaled // 2 - N_2_scaled // 2: N_2_scaled // 2 + N_2_scaled // 2]
-        return result_image
-    elif k > 1.:
-        return scaled_image[N_1_scaled // 2 - N_1 // 2: N_1_scaled // 2 + N_1 // 2,
-                            N_2_scaled // 2 - N_2 // 2: N_2_scaled // 2 + N_2 // 2]
-    else:
-        return marked_image
+def cyclic_shift(image, r):
+    N_1, N_2 = image.shape
+    shifted = np.roll(image, int(r * N_1), axis=1)
+    shifted = np.roll(shifted, int(r * N_2), axis=0)
+    return shifted
 
 
 """
@@ -86,37 +35,22 @@ def scale(marked_image, k):
 которые, в свою очередь, смещаются при выполнении преобразования,
 что делает невозможным корректное извлечение ЦВЗ
 """
-def task2(image, marked_image, watermark, alpha, level):
-    rho_scaled_arr = []
-
-    for k in np.arange(0.55, 1.5, 0.15):
-        scaled_image = scale(marked_image, k)
-
-        extracted_watermark = extracting(marked_image, image, alpha, level)
-        extracted_watermark_scaled = extracting(scaled_image, image, alpha, level)
-
-        rho = get_rho(watermark, extracted_watermark)
-        rho_scaled = get_rho(watermark, extracted_watermark_scaled)
-
-        rho_scaled_arr.append(rho_scaled if rho_scaled > 0 else 0)
-
-        if k == 0.55:
-            print(f"Rho: {rho}")
-
-        if np.abs(k - 0.85) < 0.001 or np.abs(k - 1.3) < 0.001:
-            fig = plt.figure()
-            plt.suptitle(f"k={k}")
-            sp = fig.add_subplot(1, 2, 1)
-            sp.set_title("Исходное изображение")
-            imshow(marked_image, cmap='gray', vmin=0, vmax=255)
-
-            sp = fig.add_subplot(1, 2, 2)
-            sp.set_title("Масштабированное изображение")
-            imshow(scaled_image, cmap='gray', vmin=0, vmax=255)
-
-    plt.figure()
-    plt.title("Зависимость меры близости от k")
-    plt.plot(np.arange(0.55, 1.5, 0.15), rho_scaled_arr)
+def scale(image, k):
+    N_1, N_2 = image.shape
+    scaled_image = rescale(image, k, anti_aliasing=(True if k < 1. else False)) * 255
+    N_1_scaled, N_2_scaled = scaled_image.shape
+    if k < 1.:
+        result_image = np.zeros(image.shape)
+        result_image[N_1 // 2 - N_1_scaled // 2: N_1 // 2 + N_1_scaled // 2,
+                     N_2 // 2 - N_2_scaled // 2: N_2 // 2 + N_2_scaled // 2] =\
+            scaled_image[N_1_scaled // 2 - N_1_scaled // 2: N_1_scaled // 2 + N_1_scaled // 2,
+                         N_2_scaled // 2 - N_2_scaled // 2: N_2_scaled // 2 + N_2_scaled // 2]
+        return result_image
+    elif k > 1.:
+        return scaled_image[N_1_scaled // 2 - N_1 // 2: N_1_scaled // 2 + N_1 // 2,
+                            N_2_scaled // 2 - N_2 // 2: N_2_scaled // 2 + N_2 // 2]
+    else:
+        return image
 
 
 """
@@ -127,37 +61,9 @@ def task2(image, marked_image, watermark, alpha, level):
 поскольку ...,
 что делает невозможным корректное извлечение ЦВЗ
 """
-def task3(image, marked_image, watermark, alpha, level):
-    rho_median_arr = []
-
-    for m in np.arange(3, 16, 2):
-        median_image = median_filter(marked_image, (m, m))
-
-        extracted_watermark = extracting(marked_image, image, alpha, level)
-        extracted_watermark_median = extracting(median_image, image, alpha, level)
-
-        rho = get_rho(watermark, extracted_watermark)
-        rho_median = get_rho(watermark, extracted_watermark_median)
-
-        rho_median_arr.append(rho_median if rho_median > 0 else 0)
-
-        if m == 3:
-            print(f"Rho: {rho}")
-
-        if m == 3 or m == 13:
-            fig = plt.figure()
-            plt.suptitle(f"m={m}")
-            sp = fig.add_subplot(1, 2, 1)
-            sp.set_title("Исходное изображение")
-            imshow(marked_image, cmap='gray', vmin=0, vmax=255)
-
-            sp = fig.add_subplot(1, 2, 2)
-            sp.set_title("Изображение после медианной фильтрации")
-            imshow(median_image, cmap='gray', vmin=0, vmax=255)
-
-    plt.figure()
-    plt.title("Зависимость меры близости от m")
-    plt.plot(np.arange(3, 16, 2), rho_median_arr)
+def median_filtered(image, m):
+    median_image = median_filter(image, (m, m))
+    return median_image
 
 
 """
@@ -169,62 +75,130 @@ JPEG
 (таблица квантования задается коэффициентом качества QF),
 что делает возможным корректное извлечение ЦВЗ
 """
-def task4(image, marked_image, watermark, alpha, level):
-    rho_jpeg_arr = []
+def jpeg(image, qf):
+    imsave("./images/marked_image.jpg", image, quality=qf)
+    return imread("./images/marked_image.jpg")
 
-    for qf in np.arange(30, 95, 10):
-        imsave("./images/marked_image.jpg", marked_image, quality=qf)
-        jpeg_image = imread("./images/marked_image.jpg")
 
-        extracted_watermark = extracting(marked_image, image, alpha, level)
-        extracted_watermark_jpeg = extracting(jpeg_image, image, alpha, level)
+"""
+Внесение искажений в изображение со встроенным ЦВЗ, извлечение из модифицированного изображения ЦВЗ
+и сравнение его со встраиваемым ЦВЗ по мере близости rho.
+param_values задает массив значений параметра искажения, для которого проводится исследование.
+Возвращает массив зачений мер близости для каждого значения параметра искажения.
+"""
+def process_image(image, marked_image, watermark, alpha, level, process_function, param_values):
+    rho_values = []
 
+    for value in param_values:
+        processed_image = process_function(marked_image, value)
+
+        extracted_watermark = extracting(processed_image, image, alpha, level)
         rho = get_rho(watermark, extracted_watermark)
-        rho_jpeg = get_rho(watermark, extracted_watermark_jpeg)
+        rho_values.append(rho if rho > 0 else 0)
 
-        rho_jpeg_arr.append(rho_jpeg if rho_jpeg > 0 else 0)
+    return rho_values
 
-        if qf == 30:
-            print(f"Rho: {rho}")
 
-        if qf == 50 or qf == 80:
-            fig = plt.figure()
-            plt.suptitle(f"QF={qf}")
-            sp = fig.add_subplot(1, 2, 1)
-            sp.set_title("Исходное изображение")
-            imshow(marked_image, cmap='gray', vmin=0, vmax=255)
+def plot_images(image, processed_image, title):
+    fig = plt.figure()
 
-            sp = fig.add_subplot(1, 2, 2)
-            sp.set_title("Изображение после JPEG сжатия")
-            imshow(jpeg_image, cmap='gray', vmin=0, vmax=255)
+    sp = fig.add_subplot(1, 2, 1)
+    sp.set_title("Исходное изображение")
+    imshow(image, cmap='gray', vmin=0, vmax=255)
 
+    sp = fig.add_subplot(1, 2, 2)
+    sp.set_title(title)
+    imshow(processed_image, cmap='gray', vmin=0, vmax=255)
+
+
+"""
+Отображение нескольких графиков.
+"""
+def plot_graph(x_values, y_values, colors, labels, title, x_label, y_label):
     plt.figure()
-    plt.title("Зависимость меры близости от QF")
-    plt.plot(np.arange(30, 95, 10), rho_jpeg_arr)
+    plt.suptitle(title)
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+
+    for (x, y, color, label) in zip(x_values, y_values, colors, labels):
+        plt.plot(x, y, color=color, label=label)
+
+        if len(x) >= 2:
+            step = x[1] - x[0]
+            plt.xticks(np.arange(np.min(x), np.max(x) + step, step))
+
+    plt.legend()
 
 
 def main():
     level = 3
     alpha = 0.45
     key = 321
-    modified = True
 
     image = read_image("./images/bridge.tif")
 
-    marked_image, watermark = embedding(image, key, alpha, level, modified)
-    print(np.count_nonzero(marked_image - image) / (512 * 512))
-    # imsave("./images/marked_image.png", marked_image)
-    # marked_image = read_image("./images/marked_image.png")
+    marked_image, watermark = embedding(image, key, alpha, level, False)
+    imsave("./images/marked_image.png", marked_image)
+    marked_image = read_image("./images/marked_image.png")
+    extracted_watermark = extracting(marked_image, image, alpha, level)
+    rho = get_rho(watermark, extracted_watermark)
 
-    task1(image, marked_image, watermark, alpha, level)
-    task2(image, marked_image, watermark, alpha, level)
-    task3(image, marked_image, watermark, alpha, level)
-    task4(image, marked_image, watermark, alpha, level)
+    marked_image_laplace, watermark = embedding(image, key, alpha, level, True)
+    imsave("./images/marked_image.png", marked_image_laplace)
+    marked_image_laplace = read_image("./images/marked_image.png")
+    extracted_watermark_laplace = extracting(marked_image_laplace, image, alpha, level)
+    rho_laplace = get_rho(watermark, extracted_watermark_laplace)
 
+    print(f"Rho: {rho}")
+    print(f"Rho (Beta: Laplace): {rho_laplace}")
+    # print(np.count_nonzero(marked_image - image) / (512 * 512))
+
+    process_functions = [cyclic_shift, scale,
+                         median_filtered, jpeg]
+    param_values = [np.arange(0.1, 1, 0.1), np.arange(0.55, 1.5, 0.15),
+                    np.arange(3, 16, 2), np.arange(30, 95, 10)]
+
+    colors = ['blue', 'orange']
+    labels = ['Обычное встраивание', 'Взвешенное встраивание']
+    titles = ['Зависимость меры близости от циклического сдвига на долю r',
+              'Зависимость меры близости от коэффициента масштабирования k',
+              'Зависимость меры близости от размера окна m',
+              'Зависимость меры близости от параметра качества QF']
+    x_labels = ['Доля сдвига r', 'Коэффициент масштабирования k',
+                'Размера окна m', 'Параметр качества QF']
+    y_label = 'Мера близости rho'
+
+    for (param_value, process_function, title, x_label) in zip(param_values, process_functions, titles, x_labels):
+        rho_values = process_image(image, marked_image, watermark,
+                                   alpha, level, process_function, param_value)
+        rho_values_laplace = process_image(image, marked_image_laplace, watermark,
+                                           alpha, level, process_function, param_value)
+
+        x_values = [param_value, param_value]
+        y_values = [rho_values, rho_values_laplace]
+
+        plot_graph(x_values, y_values, colors, labels, title, x_label, y_label)
+
+    processed_image_example = cyclic_shift(marked_image, 0.6)
+    title = 'Циклический сдвиг изображения на долю 0.6'
+    plot_images(marked_image, processed_image_example, title)
+
+    processed_image_example = scale(marked_image, 0.7)
+    title = 'Масштабирование изображения с коэффициентом 0.7'
+    plot_images(marked_image, processed_image_example, title)
+    processed_image_example = scale(marked_image, 1.3)
+    title = 'Масштабирование изображения с коэффициентом 1.3'
+    plot_images(marked_image, processed_image_example, title)
+
+    processed_image_example = median_filtered(marked_image, 11)
+    title = 'Медианная фильтрация изображения окном размера (11,11)'
+    plot_images(marked_image, processed_image_example, title)
+
+    processed_image_example = jpeg(marked_image, 50)
+    title = 'Сжатие изображения в формате JPEG с показателем качества 50'
+    plot_images(marked_image, processed_image_example, title)
 
     show()
-
-
 
 
 main()
