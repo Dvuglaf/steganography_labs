@@ -378,7 +378,7 @@ def practise_1():
     show()
 
 
-def main():
+if __name__ == "__main__":
     image = read_image('./images/baboon.tif')
 
     watermark_1 = read_image('./images/mickey.tif') // 255
@@ -393,6 +393,3 @@ def main():
 
     show()
 
-
-main()
-practise_1()
