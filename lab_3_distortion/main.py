@@ -1,7 +1,6 @@
 """
 Task:
 CyclicShift, Scale, Median, JPEG, Beta: Laplace
-
 """
 import numpy as np
 from skimage.io import imread, imshow, show, imsave
@@ -43,8 +42,8 @@ def scale(image, k):
         result_image = np.zeros(image.shape)
         result_image[N_1 // 2 - N_1_scaled // 2: N_1 // 2 + N_1_scaled // 2,
                      N_2 // 2 - N_2_scaled // 2: N_2 // 2 + N_2_scaled // 2] =\
-            scaled_image[N_1_scaled // 2 - N_1_scaled // 2: N_1_scaled // 2 + N_1_scaled // 2,
-                         N_2_scaled // 2 - N_2_scaled // 2: N_2_scaled // 2 + N_2_scaled // 2]
+            scaled_image[: N_1_scaled // 2 + N_1_scaled // 2,
+                         : N_2_scaled // 2 + N_2_scaled // 2]
         return result_image
     elif k > 1.:
         return scaled_image[N_1_scaled // 2 - N_1 // 2: N_1_scaled // 2 + N_1 // 2,
@@ -58,7 +57,6 @@ def scale(image, k):
 Результат:
 ЦВЗ не извлекается, мера близости около 0.01
 ДВП (Хаара) не устойчиво к преобразованию "Медианная фильтрация",
-поскольку ...,
 что делает невозможным корректное извлечение ЦВЗ
 """
 def median_filtered(image, m):
@@ -127,10 +125,12 @@ def plot_graph(x_values, y_values, colors, labels, title, x_label, y_label):
             step = x[1] - x[0]
             plt.xticks(np.arange(np.min(x), np.max(x) + step, step))
 
+        plt.yticks(np.arange(0, 1.1, 0.1))
+
     plt.legend()
 
 
-def main():
+if __name__ == "__main__":
     level = 3
     alpha = 0.45
     key = 321
@@ -155,7 +155,7 @@ def main():
 
     process_functions = [cyclic_shift, scale,
                          median_filtered, jpeg]
-    param_values = [np.arange(0.1, 1, 0.1), np.arange(0.55, 1.5, 0.15),
+    param_values = [np.arange(0., 1, 0.1), np.arange(0.55, 1.5, 0.15),
                     np.arange(3, 16, 2), np.arange(30, 95, 10)]
 
     colors = ['blue', 'orange']
@@ -200,5 +200,3 @@ def main():
 
     show()
 
-
-main()
