@@ -258,11 +258,11 @@ def plot(image, marked_image, watermark, extracted_watermark, alpha, rho, psnr, 
     show()
 
 
-def main():
+if __name__ == "__main__":
     level = 3  # уровень декомпозиции
     image = read_image("./images/bridge.tif")
     key = 321
-    modified = True
+    modified = False
     detection_threshold = 0.5
 
     best_alpha, _ = get_best_alpha(image, key, level, modified)
@@ -278,5 +278,3 @@ def main():
 
     plot(image, marked_image, watermark, extracted_watermark, best_alpha, rho, psnr, key, detection_threshold, modified)
 
-
-main()
